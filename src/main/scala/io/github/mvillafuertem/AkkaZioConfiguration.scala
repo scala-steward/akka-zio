@@ -35,20 +35,20 @@ object AkkaZioConfiguration {
 
   private lazy val actorSystem: ZIO[Any, Throwable, ActorSystem[Done]] =
     for {
-      scalciteConfigurationProperties <- Task(AkkaZioConfigurationProperties())
+      configurationProperties <- Task(AkkaZioConfigurationProperties())
       executionContext                <- Task(platform.executor.asEC)
       actorSystem                     <- Task(
                                            ActorSystem[Done](
                                              Behaviors.setup[Done] { context =>
                                                context.setLoggerName(this.getClass)
-                                               context.log.info(s"Starting ${scalciteConfigurationProperties.name}... ${"BuildInfo.toJson"}")
+                                               context.log.info(s"Starting ${configurationProperties.name}... ${"BuildInfo.toJson"}")
                                                Behaviors.receiveMessage {
                                                  case Done =>
                                                    context.log.error(s"Server could not start!")
                                                    Behaviors.stopped
                                                }
                                              },
-                                             scalciteConfigurationProperties.name.toLowerCase(),
+                                             configurationProperties.name.toLowerCase(),
                                              BootstrapSetup().withDefaultExecutionContext(executionContext)
                                            )
                                          )
