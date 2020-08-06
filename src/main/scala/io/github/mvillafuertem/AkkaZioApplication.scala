@@ -2,7 +2,7 @@ package io.github.mvillafuertem
 
 import io.github.mvillafuertem.AkkaZioConfiguration.program
 import zio.console.Console
-import zio.{ExitCode, URIO}
+import zio.{ ExitCode, URIO }
 
 object AkkaZioApplication extends zio.App {
 
