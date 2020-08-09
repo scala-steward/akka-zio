@@ -5,7 +5,6 @@ import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.server.Route
 import akka.stream.Materializer
 import akka.{ actor, Done }
 import io.github.mvillafuertem.AkkaZioApplication.platform
@@ -19,17 +18,19 @@ object AkkaZioConfiguration {
   type ZActorSystem             = Has[ActorSystem[Done]]
   type ZExecutionContext        = Has[ExecutionContext]
   type ZConfigurationProperties = Has[AkkaZioConfigurationProperties]
+  type ZApi                     = Has[AkkaZioApi]
+  type ZAkkaZio                 = ZActorSystem with ZConfigurationProperties with ZApi
 
   private val configurationPropertiesLayer: TaskLayer[ZConfigurationProperties] =
     ZLayer.fromEffect(Task.effect(AkkaZioConfigurationProperties()))
 
-  private val akkaZioEnv: TaskLayer[ZActorSystem with ZConfigurationProperties] =
+  private val akkaZioEnv: TaskLayer[ZAkkaZio] =
     ZLayer.fromEffect(Task.effect(platform.executor.asEC)) ++
       configurationPropertiesLayer >>>
-      ZLayer.fromEffect(actorSystem) ++ configurationPropertiesLayer
+      ZLayer.fromEffect(actorSystem) ++ configurationPropertiesLayer ++ ZLayer.succeed(AkkaZioApi())
 
   lazy val program: URIO[Console, ExitCode] = ZManaged
-    .fromEffect(httpServer(AkkaZioApi.route))
+    .fromEffect(httpServer)
     .useForever
     .provideLayer(akkaZioEnv)
     .exitCode
@@ -55,10 +56,11 @@ object AkkaZioConfiguration {
                                  )
     } yield actorSystem
 
-  private def httpServer(route: Route): RIO[ZActorSystem with ZConfigurationProperties, Http.ServerBinding] =
+  private lazy val httpServer: RIO[ZAkkaZio, Http.ServerBinding] =
     for {
       actorSystem             <- ZIO.access[ZActorSystem](_.get)
       configurationProperties <- ZIO.access[ZConfigurationProperties](_.get)
+      route                   <- ZIO.access[ZApi](_.get.route)
       eventualBinding         <- Task.effect {
                                    implicit lazy val untypedSystem: actor.ActorSystem = actorSystem.toClassic
                                    implicit lazy val materializer: Materializer       = Materializer(actorSystem)
