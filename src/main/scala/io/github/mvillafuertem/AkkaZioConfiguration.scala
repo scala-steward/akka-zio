@@ -21,13 +21,11 @@ object AkkaZioConfiguration {
   type ZApi                     = Has[AkkaZioApi]
   type ZAkkaZio                 = ZActorSystem with ZConfigurationProperties with ZApi
 
-  private val configurationPropertiesLayer: TaskLayer[ZConfigurationProperties] =
-    ZLayer.fromEffect(Task.effect(AkkaZioConfigurationProperties()))
-
   private val akkaZioEnv: TaskLayer[ZAkkaZio] =
-    ZLayer.fromEffect(Task.effect(platform.executor.asEC)) ++
-      configurationPropertiesLayer >>>
-      ZLayer.fromEffect(actorSystem) ++ configurationPropertiesLayer ++ ZLayer.succeed(AkkaZioApi())
+    ZLayer.fromEffect(Task.effect(platform.executor.asEC)) >+>
+      ZLayer.fromEffect(Task.effect(AkkaZioConfigurationProperties())) >+>
+      ZLayer.fromEffect(actorSystem) >+>
+      ZLayer.fromEffect(Task.effect(AkkaZioApi()))
 
   lazy val program: URIO[Console, ExitCode] = ZManaged
     .fromEffect(httpServer)
@@ -43,7 +41,7 @@ object AkkaZioConfiguration {
                                    ActorSystem[Done](
                                      Behaviors.setup[Done] { context =>
                                        context.setLoggerName(this.getClass)
-                                       context.log.info(s"Starting ${configurationProperties.name}... ${"BuildInfo.toJson"}")
+                                       context.log.info(s"Starting ${configurationProperties.name}...")
                                        Behaviors.receiveMessage {
                                          case Done =>
                                            context.log.error(s"Server could not start!")
