@@ -10,3 +10,5 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-stream-typed" % "2.6.8",
   "dev.zio"           %% "zio"               % "1.0.0"
 )
+
+enablePlugins(JavaAppPackaging)
