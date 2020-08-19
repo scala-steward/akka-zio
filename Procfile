@@ -1,0 +1,1 @@
+target/universal/stage/bin/akka-zio -Dinfrastructure.server.port=${PORT}
