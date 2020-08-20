@@ -28,6 +28,6 @@ sbt run
 
 ```shell script
 
-open http://0.0.0.0:8080/hello
+open http://0.0.0.0:8080
 
 ```
