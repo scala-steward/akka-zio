@@ -14,7 +14,7 @@ for building a highly concurrent, distributed, and resilient message-driven appl
 
 ## Cloud
 
-https://akka-zio.herokuapp.com/hello
+https://akka-zio.herokuapp.com
 
 ## Local
 
