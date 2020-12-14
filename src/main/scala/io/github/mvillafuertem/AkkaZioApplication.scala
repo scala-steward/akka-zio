@@ -6,6 +6,6 @@ import zio.{ ExitCode, URIO }
 
 object AkkaZioApplication extends zio.App {
 
-  override def run(args: List[String]): URIO[Any with Console, ExitCode] = program
+  override def run(args: List[String]): URIO[zio.ZEnv, ExitCode] = program
 
 }

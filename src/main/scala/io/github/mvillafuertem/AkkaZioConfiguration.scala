@@ -7,35 +7,31 @@ import akka.actor.typed.scaladsl.adapter._
 import akka.http.scaladsl.Http
 import akka.stream.Materializer
 import akka.{ actor, Done }
-import io.github.mvillafuertem.AkkaZioApplication.platform
-import zio._
 import zio.console.Console
-
-import scala.concurrent.ExecutionContext
+import zio.{ ZEnv, _ }
 
 object AkkaZioConfiguration {
 
   type ZActorSystem             = Has[ActorSystem[Done]]
-  type ZExecutionContext        = Has[ExecutionContext]
   type ZConfigurationProperties = Has[AkkaZioConfigurationProperties]
   type ZApi                     = Has[AkkaZioApi]
   type ZAkkaZio                 = ZActorSystem with ZConfigurationProperties with ZApi
 
-  private val akkaZioEnv: TaskLayer[ZAkkaZio] =
-    ZLayer.fromEffect(Task.effect(platform.executor.asEC)) >+>
+  private val akkaZioEnv: ZLayer[Any, Throwable, zio.ZEnv with ZAkkaZio] =
+    ZEnv.live >+>
       ZLayer.fromEffect(Task.effect(AkkaZioConfigurationProperties())) >+>
-      ZLayer.fromEffect(actorSystem) >+>
+      ZLayer.fromManaged(actorSystem) >+>
       ZLayer.fromEffect(Task.effect(AkkaZioApi()))
 
-  lazy val program: URIO[Console, ExitCode] = ZManaged
+  lazy val program: URIO[zio.ZEnv, ExitCode] = ZManaged
     .fromEffect(httpServer)
     .useForever
     .provideLayer(akkaZioEnv)
     .exitCode
 
-  lazy val actorSystem: RIO[ZExecutionContext with ZConfigurationProperties, ActorSystem[Done]] =
-    for {
-      executionContext        <- ZIO.access[ZExecutionContext](_.get)
+  lazy val actorSystem: ZManaged[Any with Console with ZConfigurationProperties with ZEnv, Throwable, ActorSystem[Done]] =
+    ZManaged.make(for {
+      runtime                 <- ZIO.runtime[ZEnv]
       configurationProperties <- ZIO.access[ZConfigurationProperties](_.get)
       actorSystem             <- Task.effect(
                                    ActorSystem[Done](
@@ -49,10 +45,10 @@ object AkkaZioConfiguration {
                                        }
                                      },
                                      configurationProperties.name.toLowerCase(),
-                                     BootstrapSetup().withDefaultExecutionContext(executionContext)
+                                     BootstrapSetup().withDefaultExecutionContext(runtime.platform.executor.asEC)
                                    )
                                  )
-    } yield actorSystem
+    } yield actorSystem)(actorSystem => Task.effect(actorSystem.terminate()).exitCode)
 
   private lazy val httpServer: RIO[ZAkkaZio, Http.ServerBinding] =
     for {
