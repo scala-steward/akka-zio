@@ -38,10 +38,9 @@ object AkkaZioConfiguration {
                                      Behaviors.setup[Done] { context =>
                                        context.setLoggerName(this.getClass)
                                        context.log.info(s"Starting ${configurationProperties.name}...")
-                                       Behaviors.receiveMessage {
-                                         case Done =>
-                                           context.log.error(s"Server could not start!")
-                                           Behaviors.stopped
+                                       Behaviors.receiveMessage { case Done =>
+                                         context.log.error(s"Server could not start!")
+                                         Behaviors.stopped
                                        }
                                      },
                                      configurationProperties.name.toLowerCase(),
