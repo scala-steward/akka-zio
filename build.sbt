@@ -8,7 +8,7 @@ libraryDependencies ++= Seq(
   "ch.qos.logback"     % "logback-classic"   % "1.2.3",
   "com.typesafe.akka" %% "akka-http"         % "10.2.4",
   "com.typesafe.akka" %% "akka-stream-typed" % "2.6.13",
-  "dev.zio"           %% "zio"               % "1.0.4-2"
+  "dev.zio"           %% "zio"               % "1.0.5"
 )
 
 enablePlugins(JavaAppPackaging)
